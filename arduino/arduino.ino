@@ -8,7 +8,7 @@
 
 #define botao2 2
 
-int dspd = 0, espd  = 0;
+char moveInstruction = 'p';
 
 void setup() {
   Wire.begin(0x08);
@@ -17,16 +17,12 @@ void setup() {
 }
 
 void loop() {
-  // 1 = frente, -1 = tras, 0 = para
-  if (dspd == 1) motor('e', 'f', 255);
-  if (dspd == -1) motor('e', 't', 255);
-  if (dspd == 0) motor('e', 'f', 0);
-
-  if (espd == 1) motor('d', 'f', 255);
-  if (espd == -1) motor('d', 't', 255);
-  if (espd == 0) motor('d', 'f', 0);
+  switch (moveInstruction) {
+    case 'f': motor('a', 't', 255);
+    case 'd': motor('d', 't', 255);
+    case 'e': motor('e', 't', 255);
+  }
 }
-
 
 void receberwire(int len){
   String data;
@@ -34,20 +30,10 @@ void receberwire(int len){
     data += (char) Wire.read();
   }
   Serial.println(data);
-
-  // f = frente, t = tras, p = para
-  if (data[0] == 'f') dspd = 1;
-  if (data[0] == 't') dspd = -1;
-  if (data[0] == 'p') dspd = 0;
-
-  if (data[1] == 'f') espd = 1;
-  if (data[1] == 't') espd = -1;
-  if (data[1] == 'p') espd = 0;
+  moveInstruction = data[0];
 }
 
-// e = esquerda, d = direita, a = ambos
-// f = frente, t = tras
-void motor(char lado, char dir , int pwm) {
+void motor(char lado, char dir, int pwm) {
   if (lado == 'e' || lado == 'a') {
     if (dir == 'f') {
       analogWrite(in2, pwm);
