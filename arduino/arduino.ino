@@ -1,56 +1,75 @@
 #include <Wire.h>
 
-#define in1 3 // esquerda tras
-#define in2 5 // esquerda frente
+#define ARDUINO_ADDR    0x08
 
-#define in3 6 // direita tras
-#define in4 9 // direita frente
+#define MOTOR_LEFT_BACK   3
+#define MOTOR_LEFT_FRONT  5
+#define MOTOR_RIGHT_FRONT 6
+#define MOTOR_RIGHT_BACK  9
 
-#define botao2 2
+#define BUTTON_PIN 2
 
-char moveInstruction = 'p';
+#define MAX_SPEED_OF_LEFT_MOTOR   255
+#define MAX_SPEED_OF_RIGHT_MOTOR  185
+
+#define GO_FORWARD  0
+#define GO_BACK     1
 
 void setup() {
-  Wire.begin(0x08);
-  Wire.onReceive(receberwire);
+  Wire.begin(ARDUINO_ADDR);
+  Wire.onReceive(onReceiveData);
   Serial.begin(57600);
 }
 
-void loop() {
-  switch (moveInstruction) {
-    case 'f': motor('a', 't', 255);
-    case 'd': motor('d', 't', 255);
-    case 'e': motor('e', 't', 255);
+void loop() { }
+
+/** Protocolo de comunicação
+    
+    Utiliza 2 bytes, um para cada motor, sendo o primeiro o da esquerda e o segundo da direita
+
+    O primeiro bit de cada byte simboliza a direção na qual o motor girar, sendo 0 ir para frente e 1 ir para tras
+    Os outros 7 bits são utilizados para definir a potência que o motor ira girar, pondendo ela ser de representada de 0 a 100
+
+    Exemplo:
+    1 0110011 // Esquerda indo para frente em uma velocidade de 50%
+    0 1100100 // Direita indo para tras em uma velocidade de 100%
+**/
+
+void onReceiveData(int len) {
+  if (len != 2) {
+    while (Wire.available()) Wire.read();
+    return;
   }
+
+  uint8_t leftMotor   = Wire.read();
+  uint8_t rightMotor  = Wire.read();
+
+  bool leftDirection  = leftMotor  >> 7;
+  bool rightDirection = rightMotor >> 7;
+
+  uint8_t leftSpeed   = leftMotor - leftDirection   * 0x80;
+  uint8_t rightSpeed  = rightMotor - rightDirection * 0x80;
+
+  motor(leftDirection, leftSpeed, rightDirection, rightSpeed);
 }
 
-void receberwire(int len){
-  String data;
-  while (Wire.available()) {
-    data += (char) Wire.read();
-  }
-  Serial.println(data);
-  moveInstruction = data[0];
-}
+void motor(bool leftDirection, uint8_t leftSpeed, bool rightDirection, uint8_t rightSpeed) {
+  uint8_t leftPwm  = map(leftSpeed,  0, 100, 0, MAX_SPEED_OF_LEFT_MOTOR);
+  uint8_t rightPwm = map(rightSpeed, 0, 100, 0, MAX_SPEED_OF_RIGHT_MOTOR);
 
-void motor(char lado, char dir, int pwm) {
-  if (lado == 'e' || lado == 'a') {
-    if (dir == 'f') {
-      analogWrite(in2, pwm);
-      analogWrite(in1, 0); 
-    } else {
-      analogWrite(in2, 0);
-      analogWrite(in1, pwm);
-    }
+  if (leftDirection == GO_FORWARD) {
+    analogWrite(MOTOR_LEFT_FRONT, leftPwm);
+    analogWrite(MOTOR_LEFT_BACK,  0); 
+  } else {
+    analogWrite(MOTOR_LEFT_FRONT, 0);
+    analogWrite(MOTOR_LEFT_BACK,  leftPwm);
   }
 
-  if (lado == 'd' || lado == 'a') {
-    if (dir == 'f') {
-      analogWrite(in3, pwm);
-      analogWrite(in4, 0);
-    } else {
-      analogWrite(in3, 0);
-      analogWrite(in4, pwm);
-    }
+  if (rightDirection == GO_FORWARD) {
+    analogWrite(MOTOR_RIGHT_FRONT, rightPwm);
+    analogWrite(MOTOR_RIGHT_BACK,  0); 
+  } else {
+    analogWrite(MOTOR_RIGHT_FRONT, 0);
+    analogWrite(MOTOR_RIGHT_BACK,  rightPwm);
   }
 }
