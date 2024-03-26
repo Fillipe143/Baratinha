@@ -5,6 +5,9 @@
 #define PCF_ADDR 0x20
 #define BASE_XSHUT_ADDR 0x29
 
+#define GO_FORWARD  0
+#define GO_BACK     1
+
 #define N_SENSOR 8
 
 bool sensors[] = {
@@ -31,18 +34,10 @@ void loop() {
   int MIN_DISTANCE = 100;
 
   if(readSensor(1) < MIN_DISTANCE) {
-    Serial.println("Direita");
-    moveMotor('d');
+    motor(GO_BACK, 100, GO_FORWARD, 0);
   } else {
-    Serial.println("Frente");
-    moveMotor('f');
+    motor(GO_BACK, 100, GO_BACK, 100);
   }
-}
-
-void moveMotor(char direction) {
-  Wire.beginTransmission(ARDUINO_ADDR);
-  Wire.write(direction);
-  Wire.endTransmission();
 }
 
 void setupSensors() {
@@ -86,4 +81,26 @@ unsigned int readSensor(int sensor) {
 
   if (measure.RangeStatus != 4) return measure.RangeMilliMeter;
   else return -1;
+}
+
+/** Protocolo de comunicação
+    
+    Utiliza 2 bytes, um para cada motor, sendo o primeiro o da esquerda e o segundo da direita
+
+    O primeiro bit de cada byte simboliza a direção na qual o motor girar, sendo 0 ir para frente e 1 ir para tras
+    Os outros 7 bits são utilizados para definir a potência que o motor ira girar, pondendo ela ser de representada de 0 a 100
+
+    Exemplo:
+    1 0110011 // Esquerda indo para frente em uma velocidade de 50%
+    0 1100100 // Direita indo para tras em uma velocidade de 100%
+**/
+
+void motor(bool leftDirection, uint8_t leftSpeed, bool rightDirection, uint8_t rightSpeed) {
+  uint8_t leftMotor  = min(leftSpeed,  (uint8_t) 100) + leftDirection  * 0x80;
+  uint8_t rightMotor = min(rightSpeed, (uint8_t) 100) + rightDirection * 0x80;
+
+  Wire.beginTransmission(ARDUINO_ADDR);
+  Wire.write(leftMotor);
+  Wire.write(rightMotor);
+  Wire.endTransmission();
 }
