@@ -7,7 +7,7 @@
 #define MOTOR_RIGHT_FRONT 6
 #define MOTOR_RIGHT_BACK  9
 
-#define BUTTON_PIN 2
+#define BUTTON_PIN 8
 
 #define MAX_SPEED_OF_LEFT_MOTOR   255
 #define MAX_SPEED_OF_RIGHT_MOTOR  185
@@ -19,6 +19,8 @@ void setup() {
   Wire.begin(ARDUINO_ADDR);
   Wire.onReceive(onReceiveData);
   Serial.begin(57600);
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 }
 
 void loop() { }
