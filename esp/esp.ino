@@ -1,24 +1,30 @@
 #include <Adafruit_PCF8574.h>
 #include <Adafruit_VL53L0X.h>
 
-#define ARDUINO_ADDR 0x8
+#define ARDUINO_ADDR 0x08
 #define PCF_ADDR 0x20
 #define BASE_XSHUT_ADDR 0x29
 
-#define GO_FORWARD  0
-#define GO_BACK     1
+#define GO_FORWARD 0
+#define GO_BACK 1
 
 #define N_SENSOR 8
+
+enum Motor {
+  LEFT,
+  RIGHT,
+  LEFT_RIGHT
+};
 
 bool sensors[] = {
   true,   // VL53L0X 1 F
   true,   // VL53L0X 2 R
-  true,  // VL53L0X 3 L
+  true,   // VL53L0X 3 L
   true,   // VL53L0X 4 BR
   true,   // VL53L0X 5 FL
   true,   // VL53L0X 6 BL
   true,   // VL53L0X 7 FR
-  false    // VL53L0X 8 B
+  false   // VL53L0X 8 B
 };
 
 Adafruit_PCF8574 pcf;
@@ -30,12 +36,13 @@ void setup() {
   Serial.begin(115200);
   setupSensors();
 }
-void loop() {
-  int MIN_DISTANCE = 100;
 
-  if(readSensor(1) < MIN_DISTANCE) {
-    motor(GO_BACK, 100, GO_FORWARD, 0);
+void loop() {
+  if(readSensor(1) < 120 || readSensor(5) < 80) {
+    Serial.println("Direita");
+    motor(GO_FORWARD, 100, GO_BACK, 100);
   } else {
+    Serial.println("Frente");
     motor(GO_BACK, 100, GO_BACK, 100);
   }
 }
@@ -82,6 +89,7 @@ unsigned int readSensor(int sensor) {
   if (measure.RangeStatus != 4) return measure.RangeMilliMeter;
   else return -1;
 }
+
 
 /** Protocolo de comunicação
     
