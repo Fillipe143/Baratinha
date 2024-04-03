@@ -10,12 +10,6 @@
 
 #define N_SENSOR 8
 
-enum Motor {
-  LEFT,
-  RIGHT,
-  LEFT_RIGHT
-};
-
 bool sensors[] = {
   true,   // VL53L0X 1 F
   true,   // VL53L0X 2 R
