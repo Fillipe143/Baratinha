@@ -5,10 +5,27 @@
 #define PCF_ADDR 0x20
 #define BASE_XSHUT_ADDR 0x29
 
-#define GO_FORWARD 0
-#define GO_BACK 1
+#define GO_FORWARD 1
+#define GO_BACK 0
 
 #define N_SENSOR 8
+
+#define SENSOR_FRONT 1
+#define SENSOR_RIGHT 2
+#define SENSOR_LEFT 3
+#define SENSOR_BACK_RIGHT 4
+#define SENSOR_FRONT_LEFT 5
+#define SENSOR_BACK_LEFT 6
+#define SENSOR_FRONT_RIGHT 7
+#define SENSOR_BACK 8
+
+enum State { 
+  STATE_FORWARD,
+  STATE_LEFT,
+  STATE_RIGHT
+};
+
+State currentState = STATE_FORWARD;
 
 bool sensors[] = {
   true,   // VL53L0X 1 F
@@ -29,15 +46,40 @@ void setup() {
   Wire.begin();
   Serial.begin(115200);
   setupSensors();
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH);
 }
 
 void loop() {
-  if(readSensor(1) < 120 || readSensor(5) < 80) {
-    Serial.println("Direita");
-    motor(GO_FORWARD, 100, GO_BACK, 100);
-  } else {
-    Serial.println("Frente");
-    motor(GO_BACK, 100, GO_BACK, 100);
+  uint8_t MIN_DISTANCE = 100;
+  switch (currentState) {
+    case STATE_FORWARD:
+      Serial.println("Frente");
+      if (readSensor(SENSOR_FRONT) > MIN_DISTANCE) {
+        motor(GO_FORWARD, 100, GO_FORWARD, 80);
+      } else {
+        if (readSensor(SENSOR_RIGHT) > MIN_DISTANCE) currentState = STATE_RIGHT;
+        else currentState = STATE_LEFT;
+      }
+      break;
+      
+      case STATE_LEFT:
+        Serial.println("Esquerda");
+        if (readSensor(SENSOR_RIGHT) < MIN_DISTANCE && readSensor(SENSOR_FRONT) > MIN_DISTANCE) {
+          currentState = STATE_FORWARD;
+        } else {
+          motor(GO_FORWARD, 100, GO_BACK, 80);
+        }
+        break;
+      
+      case STATE_RIGHT:
+        Serial.println("Direita");
+        if (readSensor(SENSOR_LEFT) < MIN_DISTANCE && readSensor(SENSOR_FRONT) > MIN_DISTANCE) {
+          currentState = STATE_FORWARD;
+        } else {
+          motor(GO_BACK, 100, GO_FORWARD, 80);
+        }
+        break;
   }
 }
 
