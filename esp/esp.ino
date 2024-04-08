@@ -51,36 +51,19 @@ void setup() {
 }
 
 void loop() {
-  uint8_t MIN_DISTANCE = 100;
-  switch (currentState) {
-    case STATE_FORWARD:
-      Serial.println("Frente");
-      if (readSensor(SENSOR_FRONT) > MIN_DISTANCE) {
-        motor(GO_FORWARD, 100, GO_FORWARD, 80);
-      } else {
-        if (readSensor(SENSOR_RIGHT) > MIN_DISTANCE) currentState = STATE_RIGHT;
-        else currentState = STATE_LEFT;
-      }
-      break;
-      
-      case STATE_LEFT:
-        Serial.println("Esquerda");
-        if (readSensor(SENSOR_RIGHT) < MIN_DISTANCE && readSensor(SENSOR_FRONT) > MIN_DISTANCE) {
-          currentState = STATE_FORWARD;
-        } else {
-          motor(GO_FORWARD, 100, GO_BACK, 80);
-        }
-        break;
-      
-      case STATE_RIGHT:
-        Serial.println("Direita");
-        if (readSensor(SENSOR_LEFT) < MIN_DISTANCE && readSensor(SENSOR_FRONT) > MIN_DISTANCE) {
-          currentState = STATE_FORWARD;
-        } else {
-          motor(GO_BACK, 100, GO_FORWARD, 80);
-        }
-        break;
+  if(readSensor(SENSOR_FRONT)<100){
+    if (readSensor(SENSOR_RIGHT)<=100) {
+      motor(GO_FORWARD,50,GO_FORWARD,50);
+    } else {
+      motor(GO_FORWARD,50,GO_FORWARD,10);
+    }
   }
+
+    if(readSensor(SENSOR_RIGHT)>100){
+      motor(GO_FORWARD,0,GO_FORWARD,50);
+    } else if(readSensor(SENSOR_RIGHT)<=100){
+      motor(GO_FORWARD,50,GO_FORWARD,50);
+    }
 }
 
 void setupSensors() {
