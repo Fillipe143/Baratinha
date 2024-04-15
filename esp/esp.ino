@@ -18,14 +18,7 @@
 #define SENSOR_BACK_LEFT 6
 #define SENSOR_FRONT_RIGHT 7
 #define SENSOR_BACK 8
-
-enum State { 
-  STATE_FORWARD,
-  STATE_LEFT,
-  STATE_RIGHT
-};
-
-State currentState = STATE_FORWARD;
+int x =0;
 
 bool sensors[] = {
   true,   // VL53L0X 1 F
@@ -50,21 +43,18 @@ void setup() {
   digitalWrite(2, HIGH);
 }
 
-void loop() {
-  if(readSensor(SENSOR_FRONT)<100){
-    if (readSensor(SENSOR_RIGHT)<=100) {
-      motor(GO_FORWARD,50,GO_FORWARD,50);
-    } else {
-      motor(GO_FORWARD,50,GO_FORWARD,10);
-    }
-  }
 
-    if(readSensor(SENSOR_RIGHT)>100){
-      motor(GO_FORWARD,0,GO_FORWARD,50);
-    } else if(readSensor(SENSOR_RIGHT)<=100){
-      motor(GO_FORWARD,50,GO_FORWARD,50);
-    }
+void loop() {
+  int front = readSensor(SENSOR_FRONT);
+  // int left = readSensor(SENSOR_LEFT);
+
+  if (front > 200) {
+    motor(GO_FORWARD, 100, GO_FORWARD, 100);
+  } else {
+    motor(GO_FORWARD, 0, GO_FORWARD, 0);
+  }
 }
+
 
 void setupSensors() {
   Serial.println("Iniciando configuração...");
@@ -102,7 +92,7 @@ void setupSensors() {
   Serial.println("Configuração terminada com sucesso!");
 }
 
-unsigned int readSensor(int sensor) {
+int readSensor(int sensor) {
   lox[sensor - 1].rangingTest(&measure, false);
 
   if (measure.RangeStatus != 4) return measure.RangeMilliMeter;
