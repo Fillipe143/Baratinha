@@ -1,5 +1,6 @@
 #include <Adafruit_PCF8574.h>
 #include <Adafruit_VL53L0X.h>
+#include <MPU6050_light.h>
 
 #define ARDUINO_ADDR 0x08
 #define PCF_ADDR 0x20
@@ -18,7 +19,7 @@
 #define SENSOR_BACK_LEFT 6
 #define SENSOR_FRONT_RIGHT 7
 #define SENSOR_BACK 8
-int x =0;
+int x = 0;
 
 bool sensors[] = {
   true,   // VL53L0X 1 F
@@ -34,27 +35,44 @@ bool sensors[] = {
 Adafruit_PCF8574 pcf;
 Adafruit_VL53L0X lox[N_SENSOR];
 VL53L0X_RangingMeasurementData_t measure;
+MPU6050 mpu(Wire);
 
 void setup() {
   Wire.begin();
   Serial.begin(115200);
   setupSensors();
+
+  byte status = mpu.begin();
+  while (status != 0);
+
+  mpu.calcOffsets();
+  
   pinMode(2, OUTPUT);
   digitalWrite(2, HIGH);
 }
 
-
 void loop() {
   int front = readSensor(SENSOR_FRONT);
-  // int left = readSensor(SENSOR_LEFT);
 
-  if (front > 200) {
+  if (front <= 200) {
+    // Girar
+    mpu.update();
+    int startAngle = readGyro();
+    motor(GO_FORWARD, 100, GO_BACK, 100);
+    while (abs(startAngle - readGyro()) <= 90) mpu.update();
     motor(GO_FORWARD, 100, GO_FORWARD, 100);
   } else {
-    motor(GO_FORWARD, 0, GO_FORWARD, 0);
+      motor(GO_FORWARD, 100, GO_FORWARD, 100);
   }
 }
 
+void rotate(int angle) {
+  mpu.update();
+  int startAngle = readGyro();
+
+  motor(GO_FORWARD, 100, GO_BACK, 100);
+  while (abs(startAngle - readGyro()) <= angle);
+}
 
 void setupSensors() {
   Serial.println("Iniciando configuração...");
@@ -97,6 +115,10 @@ int readSensor(int sensor) {
 
   if (measure.RangeStatus != 4) return measure.RangeMilliMeter;
   else return -1;
+}
+
+int readGyro() {
+  return ((int) mpu.getAngleZ()) % 360;
 }
 
 
