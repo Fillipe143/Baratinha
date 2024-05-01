@@ -9,6 +9,9 @@
 #define GO_FORWARD 1
 #define GO_BACK 0
 
+#define ROTATE_CW 1
+#define ROTATE_CCW 0
+
 #define N_SENSOR 8
 
 #define SENSOR_FRONT 1
@@ -52,26 +55,10 @@ void setup() {
 }
 
 void loop() {
-  int front = readSensor(SENSOR_FRONT);
-
-  if (front <= 200) {
-    // Girar
-    mpu.update();
-    int startAngle = readGyro();
-    motor(GO_FORWARD, 100, GO_BACK, 100);
-    while (abs(startAngle - readGyro()) <= 90) mpu.update();
-    motor(GO_FORWARD, 100, GO_FORWARD, 100);
-  } else {
-      motor(GO_FORWARD, 100, GO_FORWARD, 100);
-  }
-}
-
-void rotate(int angle) {
-  mpu.update();
-  int startAngle = readGyro();
-
-  motor(GO_FORWARD, 100, GO_BACK, 100);
-  while (abs(startAngle - readGyro()) <= angle);
+  Serial.println(readSensor(SENSOR_RIGHT));
+  if (readSensor(SENSOR_RIGHT) <150 && readSensor(SENSOR_RIGHT) > 0){
+    motor(GO_FORWARD, 50, GO_FORWARD, 50);
+  } else rotate(ROTATE_CW, 90);
 }
 
 void setupSensors() {
@@ -114,10 +101,11 @@ int readSensor(int sensor) {
   lox[sensor - 1].rangingTest(&measure, false);
 
   if (measure.RangeStatus != 4) return measure.RangeMilliMeter;
-  else return -1;
+  else return 100000;
 }
 
-int readGyro() {
+int readAngle() {
+  mpu.update();
   return ((int) mpu.getAngleZ()) % 360;
 }
 
@@ -142,4 +130,16 @@ void motor(bool leftDirection, uint8_t leftSpeed, bool rightDirection, uint8_t r
   Wire.write(leftMotor);
   Wire.write(rightMotor);
   Wire.endTransmission();
+}
+
+
+void rotate(int rotateDirection,int angle) {
+  int startAngle = readAngle();
+  
+  if(rotateDirection == ROTATE_CW) motor(GO_BACK, 50, GO_FORWARD, 50);
+  else motor(GO_FORWARD, 50, GO_BACK, 50);
+
+  while (abs(startAngle - readAngle()) <= abs(angle));
+
+  motor(GO_FORWARD, 0, GO_FORWARD, 0);
 }
